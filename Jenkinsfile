@@ -2,8 +2,8 @@ pipeline {
     agent any
 
     tools {
-        // 'Maven-3.9.10' - це точна назва, яку ви вказали в Manage Jenkins -> Tools
-        maven 'Maven-3.9.10'
+        // 'Maven 3.9.10' - це точна назва, яку ви вказали в Manage Jenkins -> Tools
+        maven 'Maven 3.9.10'
     }
 
     stages {
