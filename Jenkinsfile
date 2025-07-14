@@ -27,10 +27,10 @@ pipeline {
                     sshagent(credentials: ['ec2-ssh-key']) {
                         sh """
                             # Крок 1: Копіюємо зібраний .jar файл на сервер
-                            scp -o StrictHostKeyChecking=no complete/target/*.jar ubuntu@${SERVER_IP}:~/app/
+                            scp -o StrictHostKeyChecking=no complete/target/*.jar ubuntu@\${SERVER_IP}:~/app/
                             
                             # Крок 2: Створюємо скрипт розгортання на віддаленому сервері
-                            ssh ubuntu@${SERVER_IP} 'cat > /home/ubuntu/deploy.sh' <<'END_OF_SCRIPT'
+                            ssh ubuntu@\${SERVER_IP} 'cat > /home/ubuntu/deploy.sh' <<'END_OF_SCRIPT'
 #!/bin/bash
 echo "--> Stopping old process..."
 pkill -f 'spring-boot-complete' || echo "No process to kill."
@@ -42,10 +42,10 @@ echo "--> Deployment finished."
 END_OF_SCRIPT
 
                             # Крок 3: Робимо скрипт виконуваним
-                            ssh ubuntu@${SERVER_IP} "chmod +x /home/ubuntu/deploy.sh"
+                            ssh ubuntu@\${SERVER_IP} "chmod +x /home/ubuntu/deploy.sh"
 
                             # Крок 4: Запускаємо скрипт розгортання
-                            ssh ubuntu@${SERVER_IP} "/home/ubuntu/deploy.sh"
+                            ssh ubuntu@\${SERVER_IP} "/home/ubuntu/deploy.sh"
                         """
                     }
                 }
@@ -56,8 +56,31 @@ END_OF_SCRIPT
     // 4. Дії, які виконуються після завершення всіх етапів
     post {
         always {
-            // Просто виводимо повідомлення в консоль про завершення
-            echo "Pipeline finished with status: ${currentBuild.currentResult}"
+            script {
+                // Отримуємо всі секрети для нотифікацій в одному місці
+                withCredentials([
+                    string(credentialsId: 'telegram-bot-token', variable: 'TOKEN'),
+                    string(credentialsId: 'telegram-chat-id', variable: 'CHAT_ID'),
+                    string(credentialsId: 'ec2-server-ip', variable: 'SERVER_IP') // <-- Дістаємо IP ще раз
+                ]) {
+                    // Перевіряємо статус збірки і відправляємо відповідне повідомлення
+                    if (currentBuild.currentResult == 'SUCCESS') {
+                        telegramSend(
+                            token: TOKEN,
+                            chatId: CHAT_ID,
+                            message: "✅ **SUCCESS**: Job _${env.JOB_NAME}_ [#${env.BUILD_NUMBER}] deployed successfully.\n\n🚀 *Application available at:*\nhttp://\${SERVER_IP}:8080",
+                            parseMode: 'Markdown' // Додаємо форматування
+                        )
+                    } else {
+                        telegramSend(
+                            token: TOKEN,
+                            chatId: CHAT_ID,
+                            message: "❌ **FAILED**: Job _${env.JOB_NAME}_ [#${env.BUILD_NUMBER}] failed.\n\n*Check logs:* ${env.BUILD_URL}",
+                            parseMode: 'Markdown'
+                        )
+                    }
+                }
+            }
         }
     }
 }
