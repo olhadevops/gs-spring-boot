@@ -61,19 +61,19 @@ END_OF_SCRIPT
                 try {
                     // Отримуємо секрети для нотифікацій
                     withCredentials([
-                        string(credentialsId: 'telegram-chat-id', variable: 'CHAT_ID'),
-                        string(credentialsId: 'ec2-server-ip', variable: 'SERVER_IP')
+                            string(credentialsId: 'telegram-chat-id', variable: 'CHAT_ID'),
+                            string(credentialsId: 'ec2-server-ip', variable: 'SERVER_IP')
                     ]) {
                         // Перевіряємо статус збірки і відправляємо відповідне повідомлення
                         if (currentBuild.currentResult == 'SUCCESS') {
                             telegramSend(
-                                chatId: CHAT_ID,
-                                message: "✅ SUCCESS: Job ${env.JOB_NAME} [#${env.BUILD_NUMBER}] deployed successfully.\n\nApplication available at:\nhttp://\${SERVER_IP}:8080"
+                                    message: "✅ SUCCESS: Job ${env.JOB_NAME} [#${env.BUILD_NUMBER}] deployed successfully.\n\nApplication available at:\nhttp://\${SERVER_IP}:8080",
+                                    chatId: CHAT_ID
                             )
                         } else {
                             telegramSend(
-                                chatId: CHAT_ID,
-                                message: "❌ FAILED: Job ${env.JOB_NAME} [#${env.BUILD_NUMBER}] failed.\n\nCheck logs: ${env.BUILD_URL}"
+                                    message: "❌ FAILED: Job ${env.JOB_NAME} [#${env.BUILD_NUMBER}] failed.\n\nCheck logs: ${env.BUILD_URL}",
+                                    chatId: CHAT_ID
                             )
                         }
                     }
