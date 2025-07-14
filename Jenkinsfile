@@ -42,22 +42,29 @@ pipeline {
     post {
         always {
             script {
-                // Використовуємо синтаксис плагіна TelegramBot
-                def message
-                
-                // Отримуємо всі необхідні дані з Credentials
-                withCredentials([
-                    string(credentialsId: 'telegram-chat-id', variable: 'CHAT_ID'),
-                    string(credentialsId: 'ec2-server-ip', variable: 'SERVER_IP'),
-                    string(credentialsId: 'telegram-bot-name', variable: 'BOT_NAME')
-                ]) {
-                    if (currentBuild.currentResult == 'SUCCESS') {
-                        message = "✅ SUCCESS: Job ${env.JOB_NAME} [#${env.BUILD_NUMBER}] deployed successfully.\nApplication: http://\${SERVER_IP}:8080"
-                    } else {
-                        message = "❌ FAILED: Job ${env.JOB_NAME} [#${env.BUILD_NUMBER}] failed.\nLogs: ${env.BUILD_URL}"
+                // Обертаємо відправку повідомлення в try-catch для діагностики
+                try {
+                    // Отримуємо секрети для нотифікацій
+                    withCredentials([
+                        string(credentialsId: 'telegram-chat-id', variable: 'CHAT_ID'),
+                        string(credentialsId: 'ec2-server-ip', variable: 'SERVER_IP')
+                    ]) {
+                        // Перевіряємо статус збірки і відправляємо відповідне повідомлення
+                        if (currentBuild.currentResult == 'SUCCESS') {
+                            telegramSend(
+                                chatId: CHAT_ID,
+                                message: "✅ SUCCESS: Job ${env.JOB_NAME} [#${env.BUILD_NUMBER}] deployed successfully.\n\nApplication available at:\nhttp://\${SERVER_IP}:8080"
+                            )
+                        } else {
+                            telegramSend(
+                                chatId: CHAT_ID,
+                                message: "❌ FAILED: Job ${env.JOB_NAME} [#${env.BUILD_NUMBER}] failed.\n\nCheck logs: ${env.BUILD_URL}"
+                            )
+                        }
                     }
-                    // Відправляємо повідомлення через плагін TelegramBot, використовуючи змінну
-                    telegramBot(bot: BOT_NAME, chatId: CHAT_ID, text: message)
+                } catch (e) {
+                    // Якщо виникне помилка, виводимо її в консоль
+                    echo "Telegram notification failed: ${e.getMessage()}"
                 }
             }
         }
