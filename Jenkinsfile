@@ -69,12 +69,12 @@ END_OF_SCRIPT
                         if (currentBuild.currentResult == 'SUCCESS') {
                             telegramSend(
                                 chatId: CHAT_ID,
-                                message: "✅ SUCCESS: Job ${env.JOB_NAME} [#${env.BUILD_NUMBER}] deployed successfully.\n\nApplication available at:\nhttp://\${SERVER_IP}:8080"
+                                message: "SUCCESS: Job ${env.JOB_NAME} [#${env.BUILD_NUMBER}] deployed successfully.\n\nApplication available at:\nhttp://\${SERVER_IP}:8080"
                             )
                         } else {
                             telegramSend(
                                 chatId: CHAT_ID,
-                                message: "❌ FAILED: Job ${env.JOB_NAME} [#${env.BUILD_NUMBER}] failed.\n\nCheck logs: ${env.BUILD_URL}"
+                                message: "FAILED: Job ${env.JOB_NAME} [#${env.BUILD_NUMBER}] failed.\n\nCheck logs: ${env.BUILD_URL}"
                             )
                         }
                     }
