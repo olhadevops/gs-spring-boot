@@ -57,23 +57,23 @@ END_OF_SCRIPT
     post {
         always {
             script {
-                // Отримуємо всі секрети для нотифікацій в одному місці
+                // Отримуємо секрети для нотифікацій
                 withCredentials([
-                    string(credentialsId: 'telegram-bot-token', variable: 'TOKEN'),
+                    // Більше не отримуємо токен, він налаштований глобально
                     string(credentialsId: 'telegram-chat-id', variable: 'CHAT_ID'),
-                    string(credentialsId: 'ec2-server-ip', variable: 'SERVER_IP') // <-- Дістаємо IP ще раз
+                    string(credentialsId: 'ec2-server-ip', variable: 'SERVER_IP')
                 ]) {
                     // Перевіряємо статус збірки і відправляємо відповідне повідомлення
                     if (currentBuild.currentResult == 'SUCCESS') {
                         telegramSend(
-                            token: TOKEN,
+                            // Прибираємо параметр token
                             chatId: CHAT_ID,
                             message: "✅ **SUCCESS**: Job _${env.JOB_NAME}_ [#${env.BUILD_NUMBER}] deployed successfully.\n\n🚀 *Application available at:*\nhttp://\${SERVER_IP}:8080",
-                            parseMode: 'Markdown' // Додаємо форматування
+                            parseMode: 'Markdown'
                         )
                     } else {
                         telegramSend(
-                            token: TOKEN,
+                            // Прибираємо параметр token
                             chatId: CHAT_ID,
                             message: "❌ **FAILED**: Job _${env.JOB_NAME}_ [#${env.BUILD_NUMBER}] failed.\n\n*Check logs:* ${env.BUILD_URL}",
                             parseMode: 'Markdown'
