@@ -69,12 +69,12 @@ END_OF_SCRIPT
                         // Перевіряємо статус збірки і відправляємо відповідне повідомлення
                         if (currentBuild.currentResult == 'SUCCESS') {
                             telegramSend(
-                                chatId: -1002831749356,
+                                chatId: '-1002831749356',
                                 message: "SUCCESS: Job ${env.JOB_NAME} [#${env.BUILD_NUMBER}] deployed successfully.\n\nApplication available at:\nhttp://\${SERVER_IP}:8080"
                             )
                         } else {
                             telegramSend(
-                                chatId: -1002831749356,
+                                chatId: '-1002831749356',
                                 message: "FAILED: Job ${env.JOB_NAME} [#${env.BUILD_NUMBER}] failed.\n\nCheck logs: ${env.BUILD_URL}"
                             )
                         }
