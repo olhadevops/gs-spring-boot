@@ -65,6 +65,7 @@ END_OF_SCRIPT
                         string(credentialsId: 'ec2-server-ip', variable: 'SERVER_IP')
 
                     ]) {
+                        echo "--> Trying to send notification. Chat ID from credentials: ${CHAT_ID}"
                         // Перевіряємо статус збірки і відправляємо відповідне повідомлення
                         if (currentBuild.currentResult == 'SUCCESS') {
                             telegramSend(
