@@ -57,31 +57,22 @@ END_OF_SCRIPT
     post {
         always {
             script {
-                // Обертаємо відправку повідомлення в try-catch для діагностики
-                try {
-                    // Отримуємо секрети для нотифікацій
-                    withCredentials([
-                        string(credentialsId: 'telegram-chat-id', variable: 'CHAT_ID'),
-                        string(credentialsId: 'ec2-server-ip', variable: 'SERVER_IP')
-
-                    ]) {
-                        echo "--> Trying to send notification. Chat ID from credentials: ${CHAT_ID}"
-                        // Перевіряємо статус збірки і відправляємо відповідне повідомлення
-                        if (currentBuild.currentResult == 'SUCCESS') {
-                            telegramSend(
-                                chatId: '-1002831749356',
-                                message: "SUCCESS: Job ${env.JOB_NAME} [#${env.BUILD_NUMBER}] deployed successfully.\n\nApplication available at:\nhttp://\${SERVER_IP}:8080"
-                            )
-                        } else {
-                            telegramSend(
-                                chatId: '-1002831749356',
-                                message: "FAILED: Job ${env.JOB_NAME} [#${env.BUILD_NUMBER}] failed.\n\nCheck logs: ${env.BUILD_URL}"
-                            )
-                        }
+                // Отримуємо всі необхідні дані з Credentials
+                withCredentials([
+                    string(credentialsId: 'telegram-chat-id', variable: 'CHAT_ID'),
+                    string(credentialsId: 'ec2-server-ip', variable: 'SERVER_IP'),
+                    string(credentialsId: 'telegram-bot-token', variable: 'BOT_TOKEN')
+                ]) {
+                    def message
+                    if (currentBuild.currentResult == 'SUCCESS') {
+                        message = "✅ SUCCESS: Job ${env.JOB_NAME} [#${env.BUILD_NUMBER}] deployed successfully.\\n\\nApplication: http://\${SERVER_IP}:8080"
+                    } else {
+                        message = "❌ FAILED: Job ${env.JOB_NAME} [#${env.BUILD_NUMBER}] failed.\\n\\nLogs: ${env.BUILD_URL}"
                     }
-                } catch (e) {
-                    // Якщо виникне помилка, виводимо її в консоль
-                    echo "Telegram notification failed: ${e.getMessage()}"
+                    // Відправляємо повідомлення напряму через Telegram API за допомогою curl
+                    sh """
+                        curl -s -X POST https://api.telegram.org/bot\${BOT_TOKEN}/sendMessage -d chat_id=\${CHAT_ID} -d text="${message}"
+                    """
                 }
             }
         }
