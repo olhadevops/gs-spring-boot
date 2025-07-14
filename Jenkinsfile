@@ -1,36 +1,41 @@
 pipeline {
+    // 1. Агент, на якому буде виконуватися пайплайн
     agent any
 
+    // 2. Інструменти, які потрібно підготувати
     tools {
-        // 'Maven 3.9.10' - це точна назва, яку ви вказали в Manage Jenkins -> Tools
+        // Вказуємо точну назву Maven, як у Manage Jenkins -> Tools
         maven 'Maven 3.9.10'
     }
 
+    // 3. Етапи виконання пайплайну
     stages {
-        stage('Checkout') {
-            steps {
-                git branch: 'main', url: 'https://github.com/olhadevops/gs-spring-boot.git'
-            }
-        }
+        // Етап 1: Збірка проєкту
         stage('Build') {
             steps {
-                sh 'mvn clean install'
+                // Переходимо в папку 'complete' і виконуємо збірку
+                sh 'cd complete && mvn clean install'
             }
         }
+
+        // Етап 2: Розгортання на сервері EC2
         stage('Deploy to EC2') {
             steps {
-                // Отримуємо IP-адресу з Credentials
                 withCredentials([string(credentialsId: 'ec2-server-ip', variable: 'SERVER_IP')]) {
-                    // Використовуємо ключ доступу з Credentials
                     sshagent(credentials: ['ec2-ssh-key']) {
                         sh """
-                            # Використовуємо змінну SERVER_IP для підключення
-                            scp -o StrictHostKeyChecking=no target/*.jar ubuntu@${SERVER_IP}:~/app/
+                            # 1. Копіюємо зібраний .jar файл на сервер
+                            #    -o StrictHostKeyChecking=no - ігноруємо перевірку ключа хоста
+                            scp -o StrictHostKeyChecking=no complete/target/*.jar ubuntu@${SERVER_IP}:~/app/
                             
+                            # 2. Виконуємо скрипт розгортання на віддаленому сервері
                             ssh -o StrictHostKeyChecking=no ubuntu@${SERVER_IP} << EOF
-                                pkill java || true
-                                cd ~/app
-                                nohup java -jar *.jar > app.log 2>&1 &
+                                # Вбиваємо старий процес, якщо він є
+                                pkill -f 'spring-boot-complete' || echo "No process to kill"
+                                
+                                # Переходимо в папку і запускаємо новий .jar у фоновому режимі
+                                # </dev/null & - гарантує, що процес повністю від'єднається від SSH-сесії
+                                cd ~/app && nohup java -jar *.jar > app.log 2>&1 </dev/null &
                             EOF
                         """
                     }
@@ -38,12 +43,10 @@ pipeline {
             }
         }
     }
-    // Блок для нотифікацій додамо на наступному кроці
+
     post {
         always {
-            script {
-                echo 'Pipeline finished.'
-            }
+            echo "Pipeline finished with status: ${currentBuild.currentResult}"
         }
     }
 }
